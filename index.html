@@ -158,7 +158,7 @@ body.viewing main{padding-bottom:calc(var(--pl-h,200px) + 16px)}
 body.viewing .tabs,body.nosearch .tabs{display:none}
 body.pmode header .row{display:none}body.pmode header h1{margin-bottom:0}
 #vcat{margin:4px 0 8px}#vcat summary{font-size:14px}
-#vcat .crow{display:flex;gap:6px;align-items:center;margin:6px 0}#vcat .crow span{flex:none;min-width:78px}
+.catbox{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0}.catbox select{flex:1;min-width:110px}#vcat .crow{display:flex;gap:6px;align-items:center;margin:6px 0}#vcat .crow span{flex:none;min-width:78px}
 #vcat select{flex:1;min-width:0;padding:6px 8px}
 #qinfo{display:block;width:100%;margin:4px 0;text-align:left;font-size:13px;padding:6px 10px}
 .song.in{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,var(--card))}
@@ -250,11 +250,11 @@ Second line here</div>
   <div id="view" class="hide">
     <div class="bar">
       <button class="g admin hide" id="edit">Edit</button>
-      <button class="g" id="fm">A−</button><button class="g" id="fp">A+</button><button class="g" id="shr">Share</button></div>
+      <button class="g" id="fm">A−</button><button class="g" id="fp">A+</button><button class="g" id="shr">Share</button><button class="g" id="addpl" type="button">📋 Playlist</button></div>
     <h2 id="vt"></h2>
     <button id="qinfo" class="g hide" type="button"></button>
+    <div id="catbox" class="crow catbox"><span class="s">Tempo &amp; language</span><select id="ctT"></select><select id="ctL"></select><button id="ctSave" type="button">Save</button><span id="ctMsg" class="s"></span></div>
     <details id="vcat"><summary id="vcs">🏷 Category</summary>
-      <div class="crow"><span class="s">This song is</span><select id="ctT"></select><select id="ctL"></select></div>
       <div class="crow"><span class="s">Play only</span><select id="pfT"></select><select id="pfL"></select></div>
     </details>
     <div id="vl" class="lyrics"></div>
@@ -563,8 +563,8 @@ function syncCat(){
 async function saveCat(){
   if(!cur||!fdb)return;
   const tempo=$('ctT').value,lang=$('ctL').value;
-  cur={...cur,tempo,lang};
-  try{await fdb.collection('pw_songs').doc(cur.id).update({tempo,lang})}catch(e){alert('Could not save the category: '+e.message)}
+  const m=$('ctMsg');m.textContent='Saving…';
+  try{await fdb.collection('pw_songs').doc(cur.id).update({tempo,lang});cur={...cur,tempo,lang};const i=songs.findIndex(x=>x.id===cur.id);if(i>=0)songs[i]={...songs[i],tempo,lang};m.textContent='Saved ✓';setTimeout(()=>{if(m.textContent==='Saved ✓')m.textContent=''},2500)}catch(e){m.textContent='';alert('Could not save: '+e.message)}
   syncCat();
 }
 function render(){
@@ -1306,7 +1306,7 @@ $('xf').onclick=()=>setFull(false);
 fillSel($('ftT'),TEMPOS,'Tempo: not set');fillSel($('ftL'),LANGS,'Language: not set');
 fillSel($('ctT'),TEMPOS,'Tempo: not set');fillSel($('ctL'),LANGS,'Language: not set');
 fillSel($('pfT'),TEMPOS,'All tempos','Not set');fillSel($('pfL'),LANGS,'All languages','Not set');
-$('ctT').onchange=saveCat;$('ctL').onchange=saveCat;
+$('ctSave').onclick=saveCat;$('ctT').onchange=$('ctL').onchange=()=>{$('ctMsg').textContent=''};
 $('pfT').onchange=()=>{fT=$('pfT').value;queue=null;render();paintNav()};
 $('pfL').onchange=()=>{fL=$('pfL').value;queue=null;render();paintNav()};
 $('addFile').onclick=()=>openBulk();$('addLinks').onclick=()=>openLinks();
@@ -1485,6 +1485,43 @@ document.addEventListener('copy',e=>{
     }
     btn.disabled=false;
   }
+
+  /* ----- add the song being viewed to a playlist ----- */
+  function closePick(){var o=$('plpick');if(o)o.remove()}
+  function openPick(){
+    if(!cur)return;closePick();
+    var song=cur,ov=el('div','');ov.id='plpick';
+    ov.style.cssText='position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center';
+    var box=el('div','');box.style.cssText='background:var(--card);color:var(--tx);width:100%;max-width:560px;max-height:75vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px';
+    box.append(el('h3','','Add to playlist'));
+    box.lastChild.style.margin='0 0 4px';
+    var sub=el('div','s',capWords(song.title));sub.style.marginBottom='10px';box.append(sub);
+    var nb=el('button','','+ New playlist with this song');nb.type='button';nb.style.cssText='width:100%;margin-bottom:10px';
+    nb.onclick=function(){closePick();draft={id:null,items:[{id:song.id,n:song.number,t:song.title}]};openEd('',today(),'')};
+    box.append(nb);
+    if(!pls.length)box.append(el('p','note',plErr?'Playlists are not switched on yet. Run supabase-setup.sql once in Supabase.':'No playlists yet.'));
+    pls.forEach(function(p){
+      var has=(p.items||[]).some(function(x){return x.id===song.id});
+      var r=el('div','song'+(has?' in':'')),w=el('div','w');
+      w.append(el('div','t',[fmtDate(p.date,true),p.lead].filter(Boolean).join(' · ')));
+      w.append(el('div','s',[p.set,(p.items||[]).length+' songs'].filter(Boolean).join(' · ')));
+      r.append(w,el('div','',has?'✓ Added':'+'));
+      r.onclick=async function(){
+        if(has||!fdb)return;
+        var items=(p.items||[]).concat([{id:song.id,n:song.number,t:song.title}]);
+        try{
+          await fdb.collection('pw_playlists').doc(p.id).update({items:items,updated:Date.now()});
+          p.items=items;closePick();
+          var m=$('ctMsg');if(m){m.textContent='Added to playlist ✓';setTimeout(function(){if(m.textContent==='Added to playlist ✓')m.textContent=''},2500)}
+        }catch(e){alert('Could not add to the playlist: '+e.message)}
+      };
+      box.append(r);
+    });
+    var cl=el('button','g','Close');cl.type='button';cl.style.cssText='width:100%;margin-top:8px';cl.onclick=closePick;box.append(cl);
+    ov.onclick=function(e){if(e.target===ov)closePick()};
+    ov.append(box);document.body.append(ov);
+  }
+  $('addpl').onclick=openPick;
 
   /* ----- start-up ----- */
   fillSel(Object.assign($('pfBar').appendChild(document.createElement('select')),{id:'pfT2'}),TEMPOS,'All tempos','Not set');
