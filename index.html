@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#6a3fc8">
+<meta name="theme-color" content="#800020">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Praise &amp; Worship">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -11,9 +11,9 @@
 <script>try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script>addEventListener('error',function(e){try{if(document.getElementById('errb'))return;var d=document.createElement('div');d.id='errb';d.style.cssText='position:fixed;left:8px;right:8px;bottom:60px;z-index:99;background:#b3261e;color:#fff;padding:8px 12px;border-radius:10px;font-size:13px';d.textContent='Error: '+((e&&e.message)||'unknown')+'. Please send this message to the developer.';(document.body||document.documentElement).append(d)}catch(_){}})</script>
 <style>
-:root{--bg:#f6f4ef;--card:#fff;--tx:#1d1b18;--mu:#6d675e;--ac:#6a3fc8;--ac2:#fff;--bd:#ddd6c8;--dg:#b3261e}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#150f20;--card:#221833;--tx:#f1eafc;--mu:#b09ac4;--ac:#c4a8ff;--ac2:#0f1520;--bd:#3d2b57;--dg:#ff8a80;color-scheme:dark}}
-:root[data-theme=dark]{--bg:#150f20;--card:#221833;--tx:#f1eafc;--mu:#b09ac4;--ac:#c4a8ff;--ac2:#0f1520;--bd:#3d2b57;--dg:#ff8a80;color-scheme:dark}
+:root{--bg:#faf5f4;--card:#fff;--tx:#241416;--mu:#7a6468;--ac:#800020;--ac2:#fff;--bd:#e4d3d3;--dg:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#1a0b0f;--card:#2a1218;--tx:#f8ebed;--mu:#c9a3aa;--ac:#e8909f;--ac2:#1a0b0f;--bd:#4a2630;--dg:#ff8a80;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#1a0b0f;--card:#2a1218;--tx:#f8ebed;--mu:#c9a3aa;--ac:#e8909f;--ac2:#1a0b0f;--bd:#4a2630;--dg:#ff8a80;color-scheme:dark}
 :root[data-theme=light]{color-scheme:light}
 *{box-sizing:border-box}
 html{scroll-padding-top:calc(var(--brand-h,80px) + 100px)}
@@ -54,11 +54,11 @@ iframe{width:100%;height:100%;border:0}
 .brand .church{font-weight:800;font-size:clamp(12px,5vw,22px);line-height:1.15;letter-spacing:.03em;color:var(--ac);text-align:center;white-space:nowrap}
 .brand img{flex:none}
 .brand img{height:34px;display:inline-block;vertical-align:middle;max-width:55%;object-fit:contain;background:#fff;border-radius:14px;padding:4px 10px;animation:logoGlow 2.8s ease-in-out infinite}
-@keyframes logoGlow{0%,100%{box-shadow:0 0 6px 1px rgba(0,153,255,.45),0 0 16px 3px rgba(0,153,255,.25)}50%{box-shadow:0 0 14px 4px rgba(0,153,255,.85),0 0 32px 10px rgba(255,160,30,.45)}}
-footer{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--bg);border-top:1px solid var(--bd);text-align:center;color:#8fd0ff;font-size:11px;letter-spacing:.1em;font-weight:700;padding:5px 12px calc(5px + env(safe-area-inset-bottom,0px));text-shadow:0 0 6px #1e90ff,0 0 14px #1e90ff,0 0 26px #0a6cff;animation:footGlow 2.8s ease-in-out infinite}
-@keyframes footGlow{0%,100%{text-shadow:0 0 4px #1e90ff,0 0 10px #1e90ff}50%{text-shadow:0 0 8px #4db3ff,0 0 20px #1e90ff,0 0 36px #0a6cff}}
-@media (prefers-color-scheme:light){:root:not([data-theme=dark]) footer{color:#0a5fd0}}
-:root[data-theme=light] footer{color:#0a5fd0}
+@keyframes logoGlow{0%,100%{box-shadow:0 0 6px 1px rgba(128,0,32,.45),0 0 16px 3px rgba(128,0,32,.25)}50%{box-shadow:0 0 14px 4px rgba(160,20,50,.85),0 0 32px 10px rgba(255,160,30,.45)}}
+footer{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--bg);border-top:1px solid var(--bd);text-align:center;color:#e8a0ae;font-size:11px;letter-spacing:.1em;font-weight:700;padding:5px 12px calc(5px + env(safe-area-inset-bottom,0px));text-shadow:0 0 6px #1e90ff,0 0 14px #1e90ff,0 0 26px #0a6cff;animation:footGlow 2.8s ease-in-out infinite}
+@keyframes footGlow{0%,100%{text-shadow:0 0 4px #b0304f,0 0 10px #b0304f}50%{text-shadow:0 0 8px #e05a78,0 0 20px #b0304f,0 0 36px #800020}}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]) footer{color:#800020}}
+:root[data-theme=light] footer{color:#800020}
 #thm{padding:2px 8px;font-size:16px}
 @media (prefers-reduced-motion:reduce){.brand img,footer{animation:none}}
 body.viewing main{padding-bottom:calc(var(--pl-h,200px) + 16px)}
@@ -254,6 +254,7 @@ Second line here</div>
     <h2 id="vt"></h2>
     <button id="qinfo" class="g hide" type="button"></button>
     <div id="catbox" class="crow catbox"><span class="s">Tempo &amp; language</span><select id="ctT"></select><select id="ctL"></select><button id="ctSave" type="button">Save</button><span id="ctMsg" class="s"></span></div>
+    <div id="vidbox" class="crow catbox"><input id="vidIn" type="url" inputmode="url" placeholder="🎬 Paste a YouTube link to add a video" autocomplete="off" style="flex:1;min-width:180px;width:auto"><button id="vidAdd" type="button">Add video</button><span id="vidMsg" class="s"></span></div>
     <details id="vcat"><summary id="vcs">🏷 Category</summary>
       <div class="crow"><span class="s">Play only</span><select id="pfT"></select><select id="pfL"></select></div>
     </details>
@@ -566,6 +567,27 @@ async function saveCat(){
   const m=$('ctMsg');m.textContent='Saving…';
   try{await fdb.collection('pw_songs').doc(cur.id).update({tempo,lang});cur={...cur,tempo,lang};const i=songs.findIndex(x=>x.id===cur.id);if(i>=0)songs[i]={...songs[i],tempo,lang};m.textContent='Saved ✓';setTimeout(()=>{if(m.textContent==='Saved ✓')m.textContent=''},2500)}catch(e){m.textContent='';alert('Could not save: '+e.message)}
   syncCat();
+}
+async function addVideo(){
+  if(!cur||!fdb)return;
+  const inp=$('vidIn'),m=$('vidMsg'),raw=splitLinks(inp.value);
+  if(!raw.length){m.textContent='Paste a link first';return}
+  const bad=raw.filter(l=>!ytId(l));
+  if(bad.length){m.textContent='';alert('This is not a YouTube link:\n\n'+bad[0]);return}
+  const before=getLinks(cur).map(ytId);
+  const links=mergeLinks(rawLinks(cur),raw);
+  if(links.length===rawLinks(cur).length){m.textContent='Already added';return}
+  const btn=$('vidAdd');btn.disabled=true;m.textContent='Saving…';
+  try{
+    await fdb.collection('pw_songs').doc(cur.id).update({youtube:links[0]||'',links,updated:Date.now()});
+    cur={...cur,youtube:links[0]||'',links};
+    const i=songs.findIndex(x=>x.id===cur.id);if(i>=0)songs[i]={...songs[i],youtube:links[0]||'',links};
+    inp.value='';
+    const L=getLinks(cur),idx=L.findIndex(u=>!before.includes(ytId(u)));
+    playLink(idx>=0?idx:0,true);paintLinks();
+    m.textContent='Video added ✓';setTimeout(()=>{if(m.textContent==='Video added ✓')m.textContent=''},2500);
+  }catch(e){m.textContent='';alert('Could not add the video: '+e.message)}
+  btn.disabled=false;
 }
 function render(){
   const q=$('q').value.trim().toLowerCase();
@@ -1306,7 +1328,7 @@ $('xf').onclick=()=>setFull(false);
 fillSel($('ftT'),TEMPOS,'Tempo: not set');fillSel($('ftL'),LANGS,'Language: not set');
 fillSel($('ctT'),TEMPOS,'Tempo: not set');fillSel($('ctL'),LANGS,'Language: not set');
 fillSel($('pfT'),TEMPOS,'All tempos','Not set');fillSel($('pfL'),LANGS,'All languages','Not set');
-$('ctSave').onclick=saveCat;$('ctT').onchange=$('ctL').onchange=()=>{$('ctMsg').textContent=''};
+$('vidAdd').onclick=addVideo;$('vidIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addVideo()}};$('vidIn').oninput=()=>{$('vidMsg').textContent=''};$('ctSave').onclick=saveCat;$('ctT').onchange=$('ctL').onchange=()=>{$('ctMsg').textContent=''};
 $('pfT').onchange=()=>{fT=$('pfT').value;queue=null;render();paintNav()};
 $('pfL').onchange=()=>{fL=$('pfL').value;queue=null;render();paintNav()};
 $('addFile').onclick=()=>openBulk();$('addLinks').onclick=()=>openLinks();
