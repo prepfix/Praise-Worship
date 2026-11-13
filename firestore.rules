@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== PRAISE & WORSHIP: no restriction. Anyone can read, add and edit. =====
+    match /pw_songs/{songId} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+    match /meta/pw_counter {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
+    // ===== PRAISE & WORSHIP ministration playlists: anyone can read, add, edit and delete. =====
+    match /pw_playlists/{playlistId} {
+      allow read, create, update, delete: if true;
+    }
+
+    // ===== JOSEPH GENERATION (same Firebase project): keep these so that app keeps working =====
+    match /joseph_songs/{songId} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+    match /meta/joseph_counter {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
+    // Everything else stays locked.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
