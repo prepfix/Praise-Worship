@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="manifest" href="manifest.webmanifest?v=2">
+<link rel="manifest" href="manifest.webmanifest?v=3">
 <meta name="theme-color" content="#800020">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#800020">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#800020">
 <meta name="msapplication-navbutton-color" content="#800020">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Praise &amp; Worship">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=3">
 <title>Praise &amp; Worship</title>
 <script>try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script>addEventListener('error',function(e){try{if(document.getElementById('errb'))return;var d=document.createElement('div');d.id='errb';d.style.cssText='position:fixed;left:8px;right:8px;bottom:60px;z-index:99;background:#b3261e;color:#fff;padding:8px 12px;border-radius:10px;font-size:13px';d.textContent='Error: '+((e&&e.message)||'unknown')+'. Please send this message to the developer.';(document.body||document.documentElement).append(d)}catch(_){}})</script>
@@ -1633,10 +1633,11 @@ document.addEventListener('copy',e=>{
 /* Install banner: Android (Chrome, Edge, Samsung) gets an Install button; iPhone gets the Share > Add to Home Screen steps */
 (function(){
   var dp=null,b=document.createElement('div');b.className='selbar hide';b.id='inst';b.style.zIndex=8;
+  var ic=document.createElement('img');ic.src='icon-192.png?v=3';ic.alt='';ic.style.cssText='width:36px;height:36px;border-radius:8px;flex:none';
   var tx=document.createElement('span');tx.style.cssText='flex:1;font-weight:600;font-size:14px';
   var go=document.createElement('button');go.type='button';go.textContent='Install';
   var no=document.createElement('button');no.type='button';no.className='g';no.textContent='✕';no.setAttribute('aria-label','Close');
-  b.append(tx,go,no);document.body.append(b);
+  b.append(ic,tx,go,no);document.body.append(b);
   function std(){return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}
   function off(){try{return Date.now()-Number(localStorage.getItem('instno')||0)<6048e5}catch(e){return false}}
   function show(t,btn){if(std()||off())return;tx.textContent=t;go.style.display=btn?'':'none';b.classList.remove('hide');if(window.__fit)window.__fit()}
