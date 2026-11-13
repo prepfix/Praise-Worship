@@ -182,7 +182,8 @@ sp.addEventListener('click',end);document.addEventListener('keydown',end,{once:t
   <div class="tabs"><button id="tbS" type="button">🎵 Songs</button><button id="tbP" type="button" class="g">📋 Playlists</button></div>
 </header>
 <main>
-  <p id="cfgwarn" class="note hide">Firebase is not set up yet. Fill in the config at the top of the script (see setup steps).</p>
+  <p id="cfgwarn" class="note hide">The database is not connected yet. Put the Supabase URL and key at the top of the script.</p>
+  <div class="adminbar" id="adm"><button class="g" id="addFile" type="button">📄 Add songs from a file</button><button class="g" id="addLinks" type="button">🎬 Add video links</button></div>
   <div id="list"></div>
 
   <div id="form" class="hide">
@@ -314,15 +315,92 @@ Second line here</div>
   var im=document.querySelector('.brand img');if(im)im.addEventListener('load',fit);
 })();
 </script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-/* ====== PASTE YOUR FIREBASE CONFIG HERE (see setup steps) ====== */
-const firebaseConfig = {
-  apiKey: "AIzaSyBEaFNHlmBTfKWGnSdAFWPqMSO-WGoEr2E",
-  authDomain: "echoes-of-worship.firebaseapp.com",
-  projectId: "echoes-of-worship",
-  appId: "1:11407208362:web:b1332c7a7a3903e63c45d3"
+/* ===== Shared database: Supabase (free). A small layer that gives the app the same calls it used before. ===== */
+function makeDb(cfg){
+  var base=cfg.url.replace(/\/+$/,'')+'/rest/v1/',H={'apikey':cfg.key,'Content-Type':'application/json'},L=[];
+  if(/^eyJ/.test(cfg.key))H.Authorization='Bearer '+cfg.key;
+  function enc(x){return encodeURIComponent(x)}
+  function newId(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)}
+  async function api(path,o){
+    o=o||{};
+    var r=await fetch(base+path,{method:o.method||'GET',headers:Object.assign({},H,o.headers||{}),body:o.body});
+    if(!r.ok){
+      var m='';try{var j=await r.json();m=j.message||j.hint||''}catch(e){}
+      throw new Error((m||'Database error '+r.status)+(r.status===401||r.status===403?' (permission)':''));
+    }
+    return r;
+  }
+  async function sigOf(col){
+    var r=await api('docs?collection=eq.'+enc(col)+'&select=updated_at&order=updated_at.desc&limit=1',{headers:{Prefer:'count=exact'}});
+    var rows=await r.json(),cr=r.headers.get('Content-Range')||'';
+    return cr.split('/')[1]+'|'+(rows[0]?rows[0].updated_at:'');
+  }
+  async function fetchAll(col){
+    var out=[],PG=1000,off=0;
+    for(;;){
+      var r=await api('docs?collection=eq.'+enc(col)+'&select=id,data&order=id&limit='+PG+'&offset='+off),rows=await r.json();
+      out=out.concat(rows);if(rows.length<PG)break;off+=PG;
+    }
+    return out;
+  }
+  function sortRows(rows,f,dir){
+    rows.sort(function(a,b){
+      var x=a.data[f],y=b.data[f];
+      if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;
+      return(x<y?-1:x>y?1:0)*(dir==='desc'?-1:1);
+    });
+  }
+  async function refresh(l,force){
+    if(l.busy){l.again=true;return}
+    l.busy=true;
+    try{
+      var sig=await sigOf(l.col);
+      if(force||sig!==l.sig){
+        var rows=await fetchAll(l.col);sortRows(rows,l.order,l.dir);
+        l.sig=sig;l.errShown=false;
+        l.cb({docs:rows.map(function(r){return{id:r.id,data:function(){return r.data}}})});
+      }
+    }catch(e){if(l.err&&!l.errShown){l.errShown=true;l.err(e)}}
+    l.busy=false;
+    if(l.again){l.again=false;refresh(l,true)}
+  }
+  function touch(col){L.forEach(function(l){if(l.col===col)refresh(l,true)})}
+  async function upsert(rows){
+    await api('docs?on_conflict=collection,id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows)});
+  }
+  function ref(col,id){
+    return{id:id,col:col,
+      update:async function(d){await api('rpc/pw_merge',{method:'POST',body:JSON.stringify({c:col,i:id,d:d})});touch(col)},
+      set:async function(d){await upsert([{collection:col,id:id,data:d}]);touch(col)},
+      delete:async function(){await api('docs?collection=eq.'+enc(col)+'&id=eq.'+enc(id),{method:'DELETE'});touch(col)}};
+  }
+  setInterval(function(){if(document.visibilityState==='visible')L.forEach(function(l){refresh(l)})},15000);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')L.forEach(function(l){refresh(l)})});
+  return{
+    collection:function(name){return{
+      doc:function(id){return ref(name,id||newId())},
+      add:async function(d){var id=newId();await upsert([{collection:name,id:id,data:d}]);touch(name);return{id:id}},
+      orderBy:function(f,dir){return{onSnapshot:function(cb,err){var l={col:name,order:f,dir:dir||'asc',cb:cb,err:err};L.push(l);refresh(l);return function(){L.splice(L.indexOf(l),1)}}}}
+    }},
+    doc:function(path){var p=path.split('/');return ref(p[0],p[1])},
+    runTransaction:async function(fn){
+      var writes=[];
+      var tx={
+        get:async function(r){var rr=await api('docs?collection=eq.'+enc(r.col)+'&id=eq.'+enc(r.id)+'&select=data'),rows=await rr.json();return{exists:rows.length>0,data:function(){return rows[0]&&rows[0].data}}},
+        set:function(r,d){writes.push({collection:r.col,id:r.id,data:d})}
+      };
+      await fn(tx);
+      if(writes.length){await upsert(writes);var c={};writes.forEach(function(w){c[w.collection]=1});Object.keys(c).forEach(touch)}
+    }
+  };
+}
+</script>
+<script>
+/* ====== PASTE YOUR SUPABASE DETAILS HERE (Project URL and the publishable / anon key) ====== */
+const SUPA = {
+  url: "https://mmbhcdgpowfibbawmoos.supabase.co",
+  key: "sb_publishable_kwQ8F30iiDDwcXYYqUHYmg_dGsdoHI5"
 };
 /* =============================================================== */
 
@@ -334,9 +412,9 @@ let gotSnap=false;
 function listNote(t){const p=document.createElement('p');p.className='note';p.textContent=t;$('list').textContent='';$('list').append(p)}
 listNote('Loading songs…');
 setTimeout(function(){if(!gotSnap)listNote('Songs are taking long to load. Check your internet connection. If this stays, the songs cannot be reached from this web address - tell the developer.')},10000);
-if(firebaseConfig.apiKey==="PASTE_HERE"){$('cfgwarn').classList.remove('hide')}
+if(SUPA.url.indexOf("PASTE")===0){$('cfgwarn').classList.remove('hide')}
 else{
-  firebase.initializeApp(firebaseConfig);fdb=firebase.firestore();
+  fdb=makeDb(SUPA);
   fdb.collection('pw_songs').orderBy('number').onSnapshot(s=>{
     gotSnap=true;songs=s.docs.map(d=>({id:d.id,...d.data()}));
     if(cur){cur=songs.find(x=>x.id===cur.id)||cur}
@@ -461,6 +539,7 @@ function filterBar(){
   return d;
 }
 function paintTabs(p){
+  const a=$('adm');if(a)a.classList.toggle('hide',p!=='list');
   const pm=(p==='pls'||p==='ple'||p==='plv');
   document.body.classList.toggle('pmode',pm);
   $('tbS').className=pm?'g':'';$('tbP').className=pm?'':'g';
@@ -700,7 +779,7 @@ function openForm(s){
   panel('form');
 }
 async function save(){
-  if(!fdb){alert('Firebase is not set up yet');return}
+  if(!fdb){alert('The database is not connected yet');return}
   const title=capWords($('ti').value.trim()),lyrics=autoStanzas(cleanLyrics($('ly').value)),links=formLinks(),youtube=links[0]||'',tempo=$('ftT').value,lang=$('ftL').value;
   if(!title){alert('Please enter a title');return}
   const bad=links.find(l=>!ytId(l));
@@ -1017,7 +1096,7 @@ async function replaceOne(it){
   return old.number;
 }
 $('bgo').onclick=async()=>{
-  if(!fdb){alert('Firebase is not set up yet');return}
+  if(!fdb){alert('The database is not connected yet');return}
   const todo=bulkItems.filter(i=>i.status==='ok'||i.status==='warn'||i.status==='rep');
   const nA=todo.filter(i=>i.status!=='rep').length,nR=todo.length-nA;
   if(!todo.length||!confirm([nA?'Add '+nA+' new song'+(nA===1?'':'s'):'',nR?'Replace '+nR+' old song'+(nR===1?'':'s')+' (they keep their numbers)':''].filter(Boolean).join('\n')+'\n\nGo ahead?'))return;
@@ -1169,7 +1248,7 @@ function lnPreview(){
 }
 $('lnt').oninput=()=>{clearTimeout(lnTimer);lnTimer=setTimeout(lnParse,500)};
 $('lngo').onclick=async()=>{
-  if(!fdb){alert('Firebase is not set up yet');return}
+  if(!fdb){alert('The database is not connected yet');return}
   lnItems.forEach(lnEval);
   const go=lnItems.filter(i=>i.status==='ok'||i.status==='amb');if(!go.length)return;
   const by=new Map();go.forEach(i=>{if(!by.has(i.target.id))by.set(i.target.id,[]);by.get(i.target.id).push(i)});
@@ -1230,6 +1309,7 @@ fillSel($('pfT'),TEMPOS,'All tempos','Not set');fillSel($('pfL'),LANGS,'All lang
 $('ctT').onchange=saveCat;$('ctL').onchange=saveCat;
 $('pfT').onchange=()=>{fT=$('pfT').value;queue=null;render();paintNav()};
 $('pfL').onchange=()=>{fL=$('pfL').value;queue=null;render();paintNav()};
+$('addFile').onclick=()=>openBulk();$('addLinks').onclick=()=>openLinks();
 $('qinfo').onclick=()=>{if(window.plOpenId&&qPl)window.plOpenId(qPl)};
 $('sz').onclick=()=>{const b=$('pl').classList.toggle('big');$('sz').textContent=b?'Shrink':'Enlarge'};
 /* Copied text carries bold formatting when pasted into apps that support rich text */
@@ -1278,8 +1358,8 @@ document.addEventListener('copy',e=>{
   function paintPls(){
     var box=$('plist');box.textContent='';
     if(plErr){
-      box.append(el('p','note',/permission|insufficient/i.test(plErr)
-        ?'Playlists are not switched on yet. The updated firestore.rules file must be published once in Firebase.'
+      box.append(el('p','note',/permission|insufficient|row-level|policy|does not exist/i.test(plErr)
+        ?'Playlists are not switched on yet. Run supabase-setup.sql once in Supabase.'
         :'Could not load playlists: '+plErr));
       return;
     }
@@ -1389,7 +1469,7 @@ document.addEventListener('copy',e=>{
     box.scrollTop=st;
   }
   async function savePl(){
-    if(!fdb){alert('Firebase is not set up yet');return}
+    if(!fdb){alert('The database is not connected yet');return}
     var lead=capWords($('pLead').value.trim()),date=$('pDate').value||today(),set=$('pSet').value.trim();
     if(!lead){alert('Please enter the name of the lead');$('pLead').focus();return}
     if(!draft.items.length){alert('Add at least one song');return}
@@ -1401,7 +1481,7 @@ document.addEventListener('copy',e=>{
       else{data.created=Date.now();var r=await fdb.collection('pw_playlists').add(data);id=r.id}
       openPl(Object.assign({id:id},data));
     }catch(e){
-      alert('Could not save the playlist: '+e.message+(/permission|insufficient/i.test(e.message)?'\n\nThe updated firestore.rules file must be published in Firebase first.':''));
+      alert('Could not save the playlist: '+e.message+(/permission|insufficient/i.test(e.message)?'\n\nRun supabase-setup.sql once in Supabase first.':''));
     }
     btn.disabled=false;
   }
