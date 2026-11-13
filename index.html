@@ -11,9 +11,9 @@
 <script>try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script>addEventListener('error',function(e){try{if(document.getElementById('errb'))return;var d=document.createElement('div');d.id='errb';d.style.cssText='position:fixed;left:8px;right:8px;bottom:60px;z-index:99;background:#b3261e;color:#fff;padding:8px 12px;border-radius:10px;font-size:13px';d.textContent='Error: '+((e&&e.message)||'unknown')+'. Please send this message to the developer.';(document.body||document.documentElement).append(d)}catch(_){}})</script>
 <style>
-:root{--bg:#faf5f4;--card:#fff;--tx:#241416;--mu:#7a6468;--ac:#800020;--ac2:#fff;--bd:#e4d3d3;--dg:#b3261e}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#1a0b0f;--card:#2a1218;--tx:#f8ebed;--mu:#c9a3aa;--ac:#e8909f;--ac2:#1a0b0f;--bd:#4a2630;--dg:#ff8a80;color-scheme:dark}}
-:root[data-theme=dark]{--bg:#1a0b0f;--card:#2a1218;--tx:#f8ebed;--mu:#c9a3aa;--ac:#e8909f;--ac2:#1a0b0f;--bd:#4a2630;--dg:#ff8a80;color-scheme:dark}
+:root{--bg:#faf5f4;--card:#fff;--tx:#241416;--mu:#7a6468;--ac:#800020;--ac2:#fff;--acb:#800020;--dgb:#b3261e;--bd:#e4d3d3;--dg:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#1a0b0f;--card:#2a1218;--tx:#f8ebed;--mu:#c9a3aa;--ac:#e8909f;--ac2:#1a0b0f;--acb:#a3243f;--dgb:#b3261e;--bd:#4a2630;--dg:#ff8a80;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#1a0b0f;--card:#2a1218;--tx:#f8ebed;--mu:#c9a3aa;--ac:#e8909f;--ac2:#1a0b0f;--acb:#a3243f;--dgb:#b3261e;--bd:#4a2630;--dg:#ff8a80;color-scheme:dark}
 :root[data-theme=light]{color-scheme:light}
 *{box-sizing:border-box}
 html{scroll-padding-top:calc(var(--brand-h,80px) + 100px)}
@@ -25,7 +25,7 @@ input,textarea,select{width:100%;padding:10px 12px;border:1px solid var(--bd);bo
 textarea#ly{min-height:380px;font-size:17px;line-height:1.6}
 textarea#bt{min-height:300px}
 input#ti{padding:12px 14px;font-size:17px}
-button{border:0;border-radius:10px;padding:10px 14px;background:var(--ac);color:var(--ac2);font:inherit;font-weight:600;cursor:pointer}
+button{border:0;border-radius:10px;padding:10px 14px;background:var(--acb) linear-gradient(135deg,var(--acb),color-mix(in srgb,var(--acb) 80%,#fff));color:#fff;font:inherit;font-weight:600;cursor:pointer}
 button.g{background:transparent;color:var(--ac);border:1px solid var(--bd)}
 button.d{background:transparent;color:var(--dg);border:1px solid var(--bd)}
 button.l{background:none;border:0;color:var(--mu);font-weight:400;font-size:13px;padding:2px 6px}
@@ -34,7 +34,7 @@ main{padding:12px;max-width:760px;margin:0 auto}
 .song .w{flex:1;min-width:0}
 .song .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px;line-height:1.3}
 .song .pbtn{flex:none;margin-left:auto;padding:3px 12px;font-size:14px;line-height:1.3;border-radius:999px}
-.num{min-width:40px;text-align:center;font-weight:700;font-size:14px;color:var(--ac)}
+.num{min-width:40px;text-align:center;font-weight:700;font-size:13px;color:#fff;background:var(--acb);border-radius:8px;padding:2px 6px;flex:none}
 .t{font-weight:600}.s{color:var(--mu);font-size:13px}
 .lyrics{white-space:pre-wrap;line-height:1.7;padding-bottom:260px}
 .player{position:fixed;left:0;right:0;bottom:calc(var(--foot-h,40px) - 1px);background:var(--card);border-top:1px solid var(--bd);padding:8px 12px;z-index:6;display:flex;gap:10px;align-items:center}
@@ -55,10 +55,9 @@ iframe{width:100%;height:100%;border:0}
 .brand img{flex:none}
 .brand img{height:34px;display:inline-block;vertical-align:middle;max-width:55%;object-fit:contain;background:#fff;border-radius:14px;padding:4px 10px;animation:logoGlow 2.8s ease-in-out infinite}
 @keyframes logoGlow{0%,100%{box-shadow:0 0 6px 1px rgba(128,0,32,.45),0 0 16px 3px rgba(128,0,32,.25)}50%{box-shadow:0 0 14px 4px rgba(160,20,50,.85),0 0 32px 10px rgba(255,160,30,.45)}}
-footer{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--bg);border-top:1px solid var(--bd);text-align:center;color:#e8a0ae;font-size:11px;letter-spacing:.1em;font-weight:700;padding:5px 12px calc(5px + env(safe-area-inset-bottom,0px));text-shadow:0 0 6px #1e90ff,0 0 14px #1e90ff,0 0 26px #0a6cff;animation:footGlow 2.8s ease-in-out infinite}
-@keyframes footGlow{0%,100%{text-shadow:0 0 4px #b0304f,0 0 10px #b0304f}50%{text-shadow:0 0 8px #e05a78,0 0 20px #b0304f,0 0 36px #800020}}
-@media (prefers-color-scheme:light){:root:not([data-theme=dark]) footer{color:#800020}}
-:root[data-theme=light] footer{color:#800020}
+footer{position:fixed;left:0;right:0;bottom:0;z-index:5;background:#800020;border-top:1px solid #a3243f;text-align:center;color:#8fd0ff;font-size:11px;letter-spacing:.1em;font-weight:700;padding:5px 12px calc(5px + env(safe-area-inset-bottom,0px));text-shadow:0 0 6px rgba(30,144,255,.55);animation:footGlow 2.8s ease-in-out infinite}
+footer .fw{color:#fff}
+@keyframes footGlow{0%,100%{text-shadow:0 0 4px rgba(30,144,255,.4)}50%{text-shadow:0 0 8px #4db3ff,0 0 18px rgba(30,144,255,.8)}}
 #thm{padding:2px 8px;font-size:16px}
 @media (prefers-reduced-motion:reduce){.brand img,footer{animation:none}}
 body.viewing main{padding-bottom:calc(var(--pl-h,200px) + 16px)}
@@ -81,7 +80,7 @@ details summary{cursor:pointer;color:var(--ac);font-weight:600;margin:6px 0}
 .bpv .it.rep .m{color:var(--ac);font-weight:600}.bpv .it.skip{opacity:.55}.bpv .it.warn .m{color:var(--dg)}
 .bpv .sum{font-weight:600;margin-bottom:8px}
 button:disabled{opacity:.45;cursor:not-allowed}
-button.dz{background:var(--dg);color:var(--ac2)}
+button.dz{background:var(--dgb);color:#fff}
 .adminbar{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.adminbar button{flex:1;padding:8px 6px;font-size:14px;white-space:nowrap}
 textarea#lnt{min-height:160px}
 .lit{padding:8px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--card);margin-bottom:6px;font-size:14px}
@@ -287,7 +286,7 @@ Second line here</div>
 
   <div id="plv" class="hide"></div>
 </main>
-<footer>DEVELOPED BY CYRUS IRERI 0720872582</footer>
+<footer><span class="fw">DEVELOPED BY</span> CYRUS IRERI <span class="fw">0720872582</span></footer>
 
 <script>
 (function(){
