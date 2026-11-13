@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest?v=2">
 <meta name="theme-color" content="#800020">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#800020">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#800020">
+<meta name="msapplication-navbutton-color" content="#800020">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Praise &amp; Worship">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -104,6 +107,16 @@ textarea#lnt{min-height:160px}
 .selbar{position:fixed;left:0;right:0;bottom:calc(var(--foot-h,40px) - 1px);z-index:6;background:var(--card);border-top:1px solid var(--bd);padding:8px 12px;display:flex;gap:8px;align-items:center;justify-content:center}
 .selbar #selc{font-weight:600;margin-right:auto}
 body.selecting main{padding-bottom:80px}
+#bsel{flex-direction:column;align-items:stretch;gap:6px;z-index:7}
+#bsel .r{display:flex;gap:6px;align-items:center;width:100%}
+#bsel select{flex:1;min-width:0;padding:6px 8px}
+#bsel button{padding:6px 10px;font-size:13px;white-space:nowrap}
+.song .bck{flex:none;width:22px;height:22px;border:2px solid var(--bd);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;pointer-events:none}
+.song.bsl{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,var(--card))}
+.song.bsl .bck{background:var(--ac);border-color:var(--ac);color:var(--ac2)}
+body.bselmode main{padding-bottom:150px}
+body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:env(safe-area-inset-bottom,0px);background:#800020;z-index:9;pointer-events:none}
+body.bselmode .song .pbtn{pointer-events:none}
 label{display:block;font-weight:600;margin:12px 0 4px}
 .note{color:var(--mu);font-size:13px;margin:6px 0}
 .bar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
@@ -185,7 +198,11 @@ sp.addEventListener('click',end);document.addEventListener('keydown',end,{once:t
 </header>
 <main>
   <p id="cfgwarn" class="note hide">The database is not connected yet. Put the Supabase URL and key at the top of the script.</p>
-  <div class="adminbar" id="adm"><button class="g" id="addFile" type="button">📄 Add songs from a file</button><button class="g" id="addLinks" type="button">🎬 Add video links</button></div>
+  <div class="adminbar" id="adm"><button class="g" id="addFile" type="button">📄 Add songs from a file</button><button class="g" id="selBtn" type="button">☑ Select songs · set tempo &amp; language</button><button class="g" id="addLinks" type="button">🎬 Add video links</button></div>
+  <div id="bsel" class="selbar hide">
+    <div class="r"><span id="bselc" style="font-weight:600;margin-right:auto">0 selected</span><button type="button" class="g" id="bselAll">Select all shown</button><button type="button" class="g" id="bselNone">Clear</button><button type="button" class="g" id="bselDone">Done</button></div>
+    <div class="r"><select id="bselT"></select><select id="bselL"></select><button type="button" id="bselGo">Apply</button></div>
+  </div>
   <div id="list"></div>
 
   <div id="form" class="hide">
@@ -408,6 +425,7 @@ const SUPA = {
 /* =============================================================== */
 
 const $=id=>document.getElementById(id);
+let bMode=false;const bSet=new Set(); /* bulk select mode */
 let fT='',fL='',queue=null,qName='',qPl=null; /* fT/fL: tempo and language filters; queue: the playlist being played */
 let hashDone=false,songs=[],order=[],linkIdx=0,cur=null,editing=null,fs=18,isAdmin=true,fdb; /* no login: everyone can add and edit (songs cannot be deleted from the app) */
 
@@ -542,6 +560,7 @@ function filterBar(){
   return d;
 }
 function paintTabs(p){
+  if(p!=='list'&&bMode)bEnd();
   const a=$('adm');if(a)a.classList.toggle('hide',p!=='list');
   const pm=(p==='pls'||p==='ple'||p==='plv');
   document.body.classList.toggle('pmode',pm);
@@ -613,7 +632,9 @@ function render(){
     const p=document.createElement('button');p.type='button';p.className='pbtn';p.textContent='🎬'+(getLinks(s).length>1?' '+getLinks(s).length:'');
     if(getLinks(s).length){p.title='Play video';p.setAttribute('aria-label','Play '+s.title);p.onclick=e=>{e.stopPropagation();show(s,true)}}
     else{p.disabled=true;p.style.visibility='hidden';p.setAttribute('aria-hidden','true');p.tabIndex=-1} /* no video: leave the space blank */
-    d.append(n,w,tagEl(s),p);d.onclick=()=>show(s);return d;
+    d.append(n,w,tagEl(s),p);d.onclick=()=>show(s);
+    if(bMode){const c=document.createElement('div');c.className='bck';c.textContent=bSet.has(s.id)?'✓':'';d.prepend(c);if(bSet.has(s.id))d.classList.add('bsl');d.onclick=()=>bToggle(s,d)}
+    return d;
   };
   if(songs.length&&!q){
     const idx=document.createElement('div');idx.id='idx';
@@ -842,6 +863,43 @@ async function save(){
       cur={id:sref.id,number:num,title,lyrics,youtube,links,tempo,lang};show(cur);
     }
   }catch(e){alert('Could not save: '+e.message)}
+}
+/* ===== Bulk select: set tempo and language on many songs at once ===== */
+function bCount(){$('bselc').textContent=bSet.size+' selected'}
+function bToggle(s,d){
+  const on=!bSet.has(s.id);on?bSet.add(s.id):bSet.delete(s.id);
+  d.classList.toggle('bsl',on);const c=d.querySelector('.bck');if(c)c.textContent=on?'✓':'';bCount();
+}
+function bStart(){bMode=true;bSet.clear();document.body.classList.add('bselmode');$('bsel').classList.remove('hide');bCount();render()}
+function bEnd(){if(!bMode)return;bMode=false;bSet.clear();document.body.classList.remove('bselmode');$('bsel').classList.add('hide');render()}
+async function bApply(){
+  const tv=$('bselT').value,lv=$('bselL').value,patch={};
+  if(!bSet.size){alert('Tap the songs you want first');return}
+  if(tv)patch.tempo=tv==='none'?'':tv;
+  if(lv)patch.lang=lv==='none'?'':lv;
+  if(!tv&&!lv){alert('Choose a tempo, a language, or both');return}
+  const parts=[];
+  if(tv)parts.push('Tempo: '+(tv==='none'?'cleared':lbl(TEMPOS,tv)));
+  if(lv)parts.push('Language: '+(lv==='none'?'cleared':lbl(LANGS,lv)));
+  const n=bSet.size;
+  if(!confirm('Set '+parts.join(' and ')+' on '+n+' song'+(n===1?'':'s')+'?\n\nSongs you did not tap stay as they are.'))return;
+  const ids=[...bSet],btn=$('bselGo');let done=0,fail=0,next=0,lastErr='';
+  btn.disabled=true;
+  async function worker(){
+    while(next<ids.length){
+      const id=ids[next++];
+      try{
+        await fdb.collection('pw_songs').doc(id).update(patch);
+        const i=songs.findIndex(x=>x.id===id);if(i>=0)songs[i]={...songs[i],...patch};
+      }catch(e){fail++;lastErr=e.message}
+      done++;btn.textContent=done+'/'+ids.length;
+    }
+  }
+  await Promise.all([worker(),worker(),worker(),worker(),worker()]);
+  btn.disabled=false;btn.textContent='Apply';
+  if(fail){alert('Saved '+(ids.length-fail)+' of '+ids.length+' songs.\n'+lastErr+'\n\nYour selection is kept. Tap Apply again to retry (it is safe to repeat).')}
+  else{bSet.clear();$('bselT').value='';$('bselL').value='';alert('Done. '+ids.length+' song'+(ids.length===1?'':'s')+' updated.')}
+  bCount();render();
 }
 function selShow(){} /* kept as a no-op: songs cannot be deleted from the app */
 
@@ -1333,7 +1391,11 @@ fillSel($('pfT'),TEMPOS,'All tempos','Not set');fillSel($('pfL'),LANGS,'All lang
 $('vidAdd').onclick=addVideo;$('vidIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addVideo()}};$('vidIn').oninput=()=>{$('vidMsg').textContent=''};$('ctSave').onclick=saveCat;$('ctT').onchange=$('ctL').onchange=()=>{$('ctMsg').textContent=''};
 $('pfT').onchange=()=>{fT=$('pfT').value;queue=null;render();paintNav()};
 $('pfL').onchange=()=>{fL=$('pfL').value;queue=null;render();paintNav()};
-$('addFile').onclick=()=>openBulk();$('addLinks').onclick=()=>openLinks();
+$('addFile').onclick=()=>openBulk();
+fillSel($('bselT'),TEMPOS,'Tempo: no change','Clear tempo');fillSel($('bselL'),LANGS,'Language: no change','Clear language');
+$('selBtn').onclick=bStart;$('bselDone').onclick=bEnd;$('bselGo').onclick=bApply;
+$('bselNone').onclick=()=>{bSet.clear();bCount();render()};
+$('bselAll').onclick=()=>{order.forEach(s=>bSet.add(s.id));bCount();render()};$('addLinks').onclick=()=>openLinks();
 $('qinfo').onclick=()=>{if(window.plOpenId&&qPl)window.plOpenId(qPl)};
 $('sz').onclick=()=>{const b=$('pl').classList.toggle('big');$('sz').textContent=b?'Shrink':'Enlarge'};
 /* Copied text carries bold formatting when pasted into apps that support rich text */
