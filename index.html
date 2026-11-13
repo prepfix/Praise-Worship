@@ -1084,7 +1084,10 @@ function parseBulkText(t){
     const lines=block.split('\n');
     while(lines.length&&!lines[0].trim())lines.shift();
     if(!lines.length)return;
-    const title=capWords(stripLyricsWord(lines.shift().trim().replace(/^title\s*[:\-]\s*/i,'')));
+    let tl=lines.shift().trim().replace(/^title\s*[:\-]\s*/i,''),lang='';
+    /* a tag at the end of the title, like [EN] or [English], sets the song's language */
+    tl=tl.replace(/\s*\[\s*(en|english|sw|kiswahili|swahili|ki|kikuyu)\s*\]\s*$/i,(m,g)=>{g=g.toLowerCase();lang=g[0]==='e'?'english':g[0]==='s'?'kiswahili':'kikuyu';return''});
+    const title=capWords(stripLyricsWord(tl));
     const links=[];
     for(;;){
       while(lines.length&&!lines[0].trim())lines.shift();
@@ -1097,7 +1100,7 @@ function parseBulkText(t){
       break;
     }
     if(!title&&!lines.length)return;
-    out.push({title,links,lyrics:autoStanzas(cleanLyrics(lines.join('\n')))});
+    out.push({title,links,lang,lyrics:autoStanzas(cleanLyrics(lines.join('\n')))});
   });
   return out;
 }
@@ -1148,6 +1151,7 @@ function bulkPreview(){
         if(old&&!taken.has(old.id)){
           const nv=newVideos(it.links||[],old);
           if(mode==='replace'||(mode==='smart'&&nv)){it.status='rep';it.target=old;taken.add(old.id);it.note='replaces '+d.label+' "'+d.title+'"'+(nv?' · adds video':'')+badTxt}
+          else if(it.lang&&old.lang!==it.lang&&mode!=='add'){it.status='rep';it.langOnly=true;it.target=old;taken.add(old.id);it.note='already in the app · only sets language to '+lbl(LANGS,it.lang)}
           else if(mode==='add'){it.status='warn';it.note=why+' - will still be added'}
           else{it.status='skip';it.note=why+(mode==='smart'?', no new video':'')+' - skipped'}
         }else if(mode==='add'){it.status='warn';it.note=why+' - will still be added'}
@@ -1212,8 +1216,9 @@ async function addOne(it){
 }
 async function replaceOne(it){
   const old=songs.find(x=>x.id===it.target.id)||it.target;
+  if(it.langOnly){await fdb.collection('pw_songs').doc(old.id).update({lang:it.lang});return old.number}
   const title=capWords(it.title),lyrics=it.lyrics||old.lyrics||'',links=mergeLinks((it.links||[]).filter(ytId),rawLinks(old));
-  await fdb.collection('pw_songs').doc(old.id).update({title,lyrics,youtube:links[0]||'',links,updated:Date.now()});
+  await fdb.collection('pw_songs').doc(old.id).update({title,lyrics,youtube:links[0]||'',links,updated:Date.now(),...(it.lang?{lang:it.lang}:{})});
   return old.number;
 }
 $('bgo').onclick=async()=>{
@@ -1244,7 +1249,7 @@ $('bgo').onclick=async()=>{
           if(!num){do{nx++}while(taken.has(nx));num=nx;taken.add(num)}
           nums.push(num);if(num>top)top=num;
           const title=capWords(it.title),links=[...new Set((it.links||[]).filter(ytId))];
-          tx.set(fdb.collection('pw_songs').doc(),{number:num,title,lyrics:it.lyrics,youtube:links[0]||'',links,added:Date.now()});
+          tx.set(fdb.collection('pw_songs').doc(),{number:num,title,lyrics:it.lyrics,youtube:links[0]||'',links,added:Date.now(),...(it.lang?{lang:it.lang}:{})});
         });
         tx.set(cref,{n:Math.max(nx,top,maxUsed)});
       });
