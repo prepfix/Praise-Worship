@@ -12,6 +12,8 @@ create table if not exists public.docs (
 alter table public.docs enable row level security;
 drop policy if exists "docs_open" on public.docs;
 create policy "docs_open" on public.docs for all to anon, authenticated using (true) with check (true);
+drop policy if exists "docs_delete" on public.docs;
+create policy "docs_delete" on public.docs for delete to anon, authenticated using (true);
 
 create or replace function public.docs_touch() returns trigger language plpgsql as $$
 begin new.updated_at := now(); return new; end $$;

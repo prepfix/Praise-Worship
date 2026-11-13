@@ -395,7 +395,12 @@ function makeDb(cfg){
     return{id:id,col:col,
       update:async function(d){await api('rpc/pw_merge',{method:'POST',body:JSON.stringify({c:col,i:id,d:d})});touch(col)},
       set:async function(d){await upsert([{collection:col,id:id,data:d}]);touch(col)},
-      delete:async function(){await api('docs?collection=eq.'+enc(col)+'&id=eq.'+enc(id),{method:'DELETE'});touch(col)}};
+      delete:async function(){
+        var r=await api('docs?collection=eq.'+enc(col)+'&id=eq.'+enc(id)+'&select=id',{method:'DELETE',headers:{Prefer:'return=representation'}}),rows=await r.json();
+        /* Supabase answers "OK" even when its security rules block the delete and nothing was removed, so check that a row really went */
+        if(!rows.length){var c=await api('docs?collection=eq.'+enc(col)+'&id=eq.'+enc(id)+'&select=id'),left=await c.json();
+          if(left.length)throw new Error('The database refused to delete it (permission). Run supabase-setup.sql again in Supabase > SQL Editor.')}
+        touch(col)}};
   }
   setInterval(function(){if(document.visibilityState==='visible')L.forEach(function(l){refresh(l)})},15000);
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')L.forEach(function(l){refresh(l)})});
